@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg" href="logo.svg">
+    <title>WebGpu LLM Chat</title>
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --background-color: #F2F2F7;
+            --phone-color: #1D1D1F;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #4b76aa 0%, #3d29c0 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        /* 手机外壳样式 */
+        .phone-frame {
+            width: 375px;
+            height: 90vh;
+            background: var(--phone-color);
+            border-radius: 40px;
+            padding: 20px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        /* 手机屏幕内层 */
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 30px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 状态栏 */
+        .status-bar {
+            padding: 8px 15px;
+            background: #F8F8F8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: #000;
+            border-bottom: 1px solid #EEE;
+        }
+
+        .status-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .signal-bars {
+            display: flex;
+            align-items: end;
+            gap: 2px;
+        }
+
+        .signal-bar {
+            width: 3px;
+            height: 10px;
+            background: #333;
+            border-radius: 1px;
+        }
+
+        .bar-1 {
+            height: 6px;
+        }
+
+        .bar-2 {
+            height: 8px;
+        }
+
+        /* 聊天消息区域 */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: var(--background-color);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* 消息气泡 */
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 20px;
+            animation: fadeIn 0.3s ease-in;
+            font-size: 16px;
+            line-height: 1.4;
+            position: relative;
+        }
+
+        .user-message {
+            background: var(--primary-color);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .bot-message {
+            background: white;
+            color: #1D1D1F;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 输入区域 */
+        .input-container {
+            padding: 15px;
+            background: #F8F8F8;
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid #EEE;
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 12px 18px;
+            border: none;
+            border-radius: 25px;
+            background: white;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        #send-btn {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        #send-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 加载指示器 */
+        .loading-indicator {
+            padding: 15px;
+            text-align: center;
+            color: #666;
+            display: none;
+        }
+
+        /* 手机物理按钮 */
+        .phone-button {
+            position: absolute;
+            background: var(--phone-color);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .power-button {
+            right: -8px;
+            top: 120px;
+            width: 6px;
+            height: 60px;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .volume-buttons {
+            right: -8px;
+            top: 200px;
+            height: 80px;
+            width: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 新增加载消息样式 */
+        .loading-message {
+            align-self: flex-start;
+            background: white;
+            color: #1D1D1F;
+            padding: 12px 16px;
+            border-radius: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            height: 20px;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #007AFF;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+
+            0%,
+            80%,
+            100% {
+                transform: translateY(0);
+            }
+
+            40% {
+                transform: translateY(-6px);
+            }
+        }
+
+
+        /* 纯CSS实现方案 */
+        .bars .bar {
+            animation: bar-wave 1.2s ease-in-out infinite;
+        }
+
+        .bars .bar:nth-child(1) {
+            animation-delay: 0s;
+            height: 10px;
+        }
+
+        .bars .bar:nth-child(2) {
+            animation-delay: 0.2s;
+            height: 10px;
+        }
+
+        .bars .bar:nth-child(3) {
+            animation-delay: 0.4s;
+            height: 10px;
+        }
+
+        @keyframes bar-wave {
+
+            0%,
+            100% {
+                transform: scaleY(1);
+            }
+
+            50% {
+                transform: scaleY(0.3);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 手机外壳 -->
+    <div class="phone-frame">
+        <div class="phone-button power-button"></div>
+        <div class="phone-button volume-buttons">
+            <div class="phone-button" style="height: 20px;"></div>
+            <div class="phone-button" style="height: 20px;"></div>
+        </div>
+
+        <!-- 手机屏幕 -->
+        <div class="phone-screen">
+            <!-- 状态栏 -->
+            <div class="status-bar">
+                <div class="status-bar-left">
+                    <div class="signal-bars bars" id="wifi-bar">
+                        <div class="signal-bar bar-1 bar"></div>
+                        <div class="signal-bar bar-2 bar"></div>
+                        <div class="signal-bar bar"></div>
+                    </div>
+                    <span id="wifi">loading</span>
+                </div>
+                <div id="clock"></div>
+            </div>
+            <!-- 聊天内容 -->
+            <div class="chat-messages" id="chat-messages"></div>
+
+            <!-- 输入区域 -->
+            <div class="input-container">
+                <input type="text" id="user-input" placeholder="输入消息...">
+                <button id="send-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取显示时间的元素
+        const clockElement = document.getElementById('clock');
+
+        // 更新时间显示的函数
+        function updateTime() {
+            const date = new Date();
+            // 使用padStart补零，确保两位数显示
+            let hours = date.getHours();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;  // 将0点转换为12点
+            hours = String(hours).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            // 组合时间字符串
+            const timeString = `${hours}:${minutes} ${ampm}`;
+            // 更新元素内容
+            clockElement.textContent = timeString;
+        }
+
+        // 页面加载后立即显示时间
+        updateTime();
+
+        // 每秒更新一次时间
+        setInterval(updateTime, 1000);
+    </script>
+    <script type="module">
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        function loading() {
+            document.getElementById('user-input').disabled = true
+            document.getElementById('send-btn').disabled = true
+        }
+        function loaded() {
+            document.getElementById('user-input').disabled = false
+            document.getElementById('send-btn').disabled = false
+            document.getElementById('wifi').innerText = '😊'
+            document.getElementById('wifi-bar').classList.remove("bars")
+        }
+        loading();
+        console.log('starting....')
+        import { pipeline, env } from 'https://cdn.jsdelivr.net.cn/npm/@huggingface/transformers@3.0.0';
+        env.remoteHost = 'https://hf-mirror.com';
+        env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net.cn/npm/@huggingface/transformers@3.0.0/dist/'
+        let generator = null;
+        // 初始化模型
+        async function initializeModel() {
+            try {
+                generator = await pipeline(
+                    "text-generation",
+                    "onnx-community/Qwen2.5-0.5B-Instruct",
+                    { dtype: "q4", device: "webgpu" },
+                );
+            } catch (error) {
+                console.error('模型加载失败:', error);
+            }
+            loaded();
+        }
+
+        // 添加消息到聊天窗口
+        function addMessage(content, isUser = true) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            messageDiv.textContent = content;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // 生成回复
+        async function generateResponse(prompt) {
+            const button = document.getElementById('send-btn');
+            let loadingMessage = null;
+            try {
+                button.disabled = true;
+                // 添加加载消息
+                loadingMessage = addLoadingMessage();
+                const messages = [
+                    { role: "system", content: "You are a helpful assistant." },
+                    { role: "user", content: prompt },
+                ];
+                const response = await generator(messages, {
+                    max_new_tokens: 256,
+                    temperature: 0.7,
+                    do_sample: true,
+                });
+                removeLoadingMessage(loadingMessage);
+                return response[0].generated_text.at(-1).content;
+            } catch (error) {
+                // 出现错误时修改加载消息为错误提示
+                if (loadingMessage) {
+                    removeLoadingMessage(loadingMessage);
+                }
+                console.error('生成失败:', error);
+                return '抱歉，生成回复时出现错误';
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        // 处理用户发送消息
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const message = input.value.trim();
+            if (!message) return;
+            addMessage(message, true);
+            input.value = '';
+            const response = await generateResponse(message);
+            addMessage(response, false);
+        }
+
+        // 初始化
+        initializeModel();
+        // 回车发送支持
+        document.getElementById('user-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        // 将事件监听器移至此处
+        document.getElementById('send-btn').addEventListener('click', sendMessage);
+
+        // 保持原有回车支持
+        document.getElementById('user-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        // 添加加载消息的函数
+        function addLoadingMessage() {
+            const messagesDiv = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message loading-message';
+            messageDiv.innerHTML = `
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+                <span>正在输入...</span>
+            `;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            return messageDiv;
+        }
+        // 移除加载消息
+        function removeLoadingMessage(element) {
+            if (element && element.parentNode) {
+                element.parentNode.removeChild(element);
+            }
+        }
+    </script>
+</body>
+
+</html>
