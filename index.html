@@ -354,12 +354,12 @@
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
         function loading() {
-            document.getElementById('user-input').disabled = true
-            document.getElementById('send-btn').disabled = true
+            userInput.disabled = true
+            sendBtn.disabled = true
         }
         function loaded() {
-            document.getElementById('user-input').disabled = false
-            document.getElementById('send-btn').disabled = false
+            userInput.disabled = false
+            sendBtn.disabled = false
             document.getElementById('wifi').innerText = '😊'
             document.getElementById('wifi-bar').classList.remove("bars")
         }
@@ -395,10 +395,9 @@
 
         // 生成回复
         async function generateResponse(prompt) {
-            const button = document.getElementById('send-btn');
             let loadingMessage = null;
             try {
-                button.disabled = true;
+                sendBtn.disabled = true;
                 // 添加加载消息
                 loadingMessage = addLoadingMessage();
                 const messages = [
@@ -420,17 +419,16 @@
                 console.error('生成失败:', error);
                 return '抱歉，生成回复时出现错误';
             } finally {
-                button.disabled = false;
+                sendBtn.disabled = false;
             }
         }
 
         // 处理用户发送消息
         async function sendMessage() {
-            const input = document.getElementById('user-input');
-            const message = input.value.trim();
+            const message = userInput.value.trim();
             if (!message) return;
             addMessage(message, true);
-            input.value = '';
+            userInput.value = '';
             const response = await generateResponse(message);
             addMessage(response, false);
         }
@@ -438,17 +436,17 @@
         // 初始化
         initializeModel();
         // 回车发送支持
-        document.getElementById('user-input').addEventListener('keypress', (e) => {
+        userInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
             }
         });
         // 将事件监听器移至此处
-        document.getElementById('send-btn').addEventListener('click', sendMessage);
+        sendBtn.addEventListener('click', sendMessage);
 
         // 保持原有回车支持
-        document.getElementById('user-input').addEventListener('keypress', (e) => {
+        userInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
