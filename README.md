@@ -2,6 +2,8 @@
 
 基于 WebGPU 和 Transformers.js 的浏览器端大语言模型聊天实现，通过 GPU 加速实现高效的 AI 对话体验。
 
+![webgpu llm chat](https://github.com/xinzhanguo/webgpullmchat/blob/main/webgpullmchat.png?raw=true)
+
 ## ✨ 特性
 
 - **WebGPU 加速** - 利用浏览器 GPU 资源加速推理
@@ -18,8 +20,6 @@
 
 ### 打开体验
 - 浏览器中打开即可体验
-
-![webgpu llm chat](https://github.com/xinzhanguo/webgpullmchat/blob/main/webgpullmchat.png?raw=true)
 
 ### 开发说明
 
